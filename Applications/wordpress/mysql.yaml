@@ -1,0 +1,62 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  labels:
+    app: mysql
+  name: wordpress-sql
+spec:
+  selector:
+    matchLabels:
+      app: mysql
+  template:
+    metadata:
+      labels:
+        app: mysql
+    spec:
+      containers:
+        - name: wordpress-sql
+          image: mysql:latest
+          ports:
+            - containerPort: 3306
+              protocol: TCP
+          env:
+            - name: MYSQL_ROOT_PASSWORD
+              valueFrom:
+                secretKeyRef: 
+                  name: mysql-secret
+                  key: mysql-root-password
+
+            - name: MYSQL_PASSWORD
+              valueFrom:
+                secretKeyRef: 
+                  name: mysql-secret
+                  key: mysql-password
+
+            - name: MYSQL_DATABASE
+              valueFrom:
+                secretKeyRef: 
+                  name: mysql-secret
+                  key: mysql-database
+            - name: MYSQL_USER
+              valueFrom:
+                secretKeyRef: 
+                  name: mysql-secret
+                  key: mysql-username
+      nodeSelector:
+        p4kube: applications
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: mysql-service
+  labels:
+    app: mysql
+spec:
+  ports:
+    - port: 3306
+      protocol: TCP
+      targetPort: 3306
+  selector:
+    app: mysql
+  type: ClusterIP
