@@ -9,11 +9,14 @@ t4p4s compiles and deploys the P4 program to NIC and also generates p4info.txt f
 
 t4p4s is using [hlir16](https://github.com/P4ELTE/hlir16/tree/8ee85b84478567658ec48fae7c3e0357490cfa86) which uses p4c to generate json file from p4 program. In this .py file, it can be seen that hlir is using p4c to generate [json file](https://github.com/P4ELTE/hlir16/blob/8ee85b84478567658ec48fae7c3e0357490cfa86/hlir.py#L103). 
 
-https://opennetworking.org/wp-content/uploads/2019/10/NG-SDN-Tutorial-Session-1.pdf Slide 52 shows how p4 program is deployed with p4c
+https://opennetworking.org/wp-content/uploads/2019/10/NG-SDN-Tutorial-Session-1.pdf 
+Slide 52 shows how p4 program is deployed with p4c
 
 
 **Helpful Commands**
+
 To convert compiler IR of P4 program into json format.
+
 /home/p4kube/p4c/build/p4test ab.p4 --toJSON ab.json 
 
 (ab.p4 and ab.json are test files)
