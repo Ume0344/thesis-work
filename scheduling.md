@@ -65,9 +65,14 @@ affinity:
                       - high
 ```
 
+**Predicates to be used for state-of-the-art implementation**
+
+- K8s Anti-Affinity
+
+- BalancedResourceAllocation
+
 **References**
 
 https://kubevirt.io/2020/Advanced-scheduling-with-affinity-rules.html
+
 https://community.ops.io/danielepolencic/kubernetes-scheduler-deep-dive-khc
-
-
