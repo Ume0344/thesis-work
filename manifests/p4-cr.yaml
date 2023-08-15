@@ -1,0 +1,8 @@
+apiVersion: "p4kube.comnets.com/v1"
+kind: P4
+metadata:
+  name: test-p4
+spec:
+  p4ProgramLocation: "/home/apmec/kubernetes-project"
+  compilerCommand: "./t4p4s.sh :l2fwd"
+  replicas: 2
