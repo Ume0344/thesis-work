@@ -20,10 +20,7 @@ package fake
 
 import (
 	"context"
-	json "encoding/json"
-	"fmt"
 	v1alpha1 "p4kube/pkg/apis/p4kube/v1alpha1"
-	p4kubev1alpha1 "p4kube/pkg/client/applyconfiguration/p4kube/v1alpha1"
 
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	labels "k8s.io/apimachinery/pkg/labels"
@@ -124,28 +121,6 @@ func (c *FakeP4s) DeleteCollection(ctx context.Context, opts v1.DeleteOptions, l
 func (c *FakeP4s) Patch(ctx context.Context, name string, pt types.PatchType, data []byte, opts v1.PatchOptions, subresources ...string) (result *v1alpha1.P4, err error) {
 	obj, err := c.Fake.
 		Invokes(testing.NewPatchSubresourceAction(p4sResource, c.ns, name, pt, data, subresources...), &v1alpha1.P4{})
-
-	if obj == nil {
-		return nil, err
-	}
-	return obj.(*v1alpha1.P4), err
-}
-
-// Apply takes the given apply declarative configuration, applies it and returns the applied p4.
-func (c *FakeP4s) Apply(ctx context.Context, p4 *p4kubev1alpha1.P4ApplyConfiguration, opts v1.ApplyOptions) (result *v1alpha1.P4, err error) {
-	if p4 == nil {
-		return nil, fmt.Errorf("p4 provided to Apply must not be nil")
-	}
-	data, err := json.Marshal(p4)
-	if err != nil {
-		return nil, err
-	}
-	name := p4.Name
-	if name == nil {
-		return nil, fmt.Errorf("p4.Name must be provided to Apply")
-	}
-	obj, err := c.Fake.
-		Invokes(testing.NewPatchSubresourceAction(p4sResource, c.ns, *name, types.ApplyPatchType, data), &v1alpha1.P4{})
 
 	if obj == nil {
 		return nil, err

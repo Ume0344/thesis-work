@@ -26,8 +26,8 @@
 
 `execDir=/home/apmec/go/src/k8s.io/code-generator/`
 
-7- Run this command; 
+7- Run this command from project root directory; 
 
-`$execDir/generate-groups.sh all p4kube/pkg/client p4kube/pkg/apis p4kube:v1alpha1 --go-header-file $execDir/examples/hack/boilerplate.go.txt`
+`$execDir/generate-groups.sh deepcopy,client,informer,lister p4kube/pkg/client p4kube/pkg/apis p4kube:v1alpha1 -h $execDir/examples/hack/boilerplate.go.txt --output-base ..`
 
-It will generate all the files (clientset, informers etc in ./pkg ).
+It will generate all the files (clientset, informers, lister etc in ./pkg ).

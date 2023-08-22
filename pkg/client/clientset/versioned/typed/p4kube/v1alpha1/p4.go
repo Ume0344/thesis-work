@@ -20,10 +20,7 @@ package v1alpha1
 
 import (
 	"context"
-	json "encoding/json"
-	"fmt"
 	v1alpha1 "p4kube/pkg/apis/p4kube/v1alpha1"
-	p4kubev1alpha1 "p4kube/pkg/client/applyconfiguration/p4kube/v1alpha1"
 	scheme "p4kube/pkg/client/clientset/versioned/scheme"
 	"time"
 
@@ -49,7 +46,6 @@ type P4Interface interface {
 	List(ctx context.Context, opts v1.ListOptions) (*v1alpha1.P4List, error)
 	Watch(ctx context.Context, opts v1.ListOptions) (watch.Interface, error)
 	Patch(ctx context.Context, name string, pt types.PatchType, data []byte, opts v1.PatchOptions, subresources ...string) (result *v1alpha1.P4, err error)
-	Apply(ctx context.Context, p4 *p4kubev1alpha1.P4ApplyConfiguration, opts v1.ApplyOptions) (result *v1alpha1.P4, err error)
 	P4Expansion
 }
 
@@ -175,32 +171,6 @@ func (c *p4s) Patch(ctx context.Context, name string, pt types.PatchType, data [
 		Name(name).
 		SubResource(subresources...).
 		VersionedParams(&opts, scheme.ParameterCodec).
-		Body(data).
-		Do(ctx).
-		Into(result)
-	return
-}
-
-// Apply takes the given apply declarative configuration, applies it and returns the applied p4.
-func (c *p4s) Apply(ctx context.Context, p4 *p4kubev1alpha1.P4ApplyConfiguration, opts v1.ApplyOptions) (result *v1alpha1.P4, err error) {
-	if p4 == nil {
-		return nil, fmt.Errorf("p4 provided to Apply must not be nil")
-	}
-	patchOpts := opts.ToPatchOptions()
-	data, err := json.Marshal(p4)
-	if err != nil {
-		return nil, err
-	}
-	name := p4.Name
-	if name == nil {
-		return nil, fmt.Errorf("p4.Name must be provided to Apply")
-	}
-	result = &v1alpha1.P4{}
-	err = c.client.Patch(types.ApplyPatchType).
-		Namespace(c.ns).
-		Resource("p4s").
-		Name(*name).
-		VersionedParams(&patchOpts, scheme.ParameterCodec).
 		Body(data).
 		Do(ctx).
 		Into(result)
