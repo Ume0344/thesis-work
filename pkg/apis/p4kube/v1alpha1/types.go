@@ -7,21 +7,21 @@ import (
 // +genclient
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
 type P4 struct {
-	metav1.TypeMeta
-	metav1.ObjectMeta
+	metav1.TypeMeta   `json:",inline"`
+	metav1.ObjectMeta `json:"metadata,omitempty"`
 
-	Spec P4Spec
+	Spec P4Spec `json:"spec"`
 }
 
 type P4Spec struct {
-	P4Program       string //Location of p4 program
-	compilerCommand string // Compiler command
+	P4Program       string `json:"p4ProgramLocation"`
+	CompilerCommand string `json:"compilerCommand"`
 }
 
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
 type P4List struct {
-	metav1.TypeMeta
-	metav1.ObjectMeta
+	metav1.TypeMeta   `json:",inline"`
+	metav1.ObjectMeta `json:"metadata,omitempty"`
 
-	Items []P4
+	Items []P4 `json:"items"`
 }

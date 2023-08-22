@@ -6,8 +6,8 @@ import (
 	"k8s.io/apimachinery/pkg/runtime/schema"
 )
 
-var SchemaGroupVersion = schema.GroupVersion{
-	Group:   "p4kube",
+var SchemeGroupVersion = schema.GroupVersion{
+	Group:   "p4kube.comnets",
 	Version: "v1alpha1",
 }
 
@@ -23,7 +23,7 @@ func init() {
 
 func addKnownTypes(scheme *runtime.Scheme) error {
 	// Add the types P4 and P4List to scheme
-	scheme.AddKnownTypes(SchemaGroupVersion, &P4{}, &P4List{})
-	metav1.AddToGroupVersion(scheme, SchemaGroupVersion)
+	scheme.AddKnownTypes(SchemeGroupVersion, &P4{}, &P4List{})
+	metav1.AddToGroupVersion(scheme, SchemeGroupVersion)
 	return nil
 }
