@@ -63,13 +63,12 @@ func (c *Controller) handleDel(obj interface{}) {
 func (c *Controller) run(channel <-chan struct{}) {
 	// Takes receive only channel
 
-	// wait for the cache to be synched before starting workers
+	// wait for the cache inside the informer to be synched before starting workers
 	if !cache.WaitForCacheSync(channel, c.p4Synched) {
 		fmt.Print("Waiting for cache to be synched\n")
 	}
 
-	//Call the worker function after every 1 second till the channel is stopped
-	fmt.Printf("Check\n")
+	//Create goroutine to call the worker function after every 1 second till the channel is stopped
 	go wait.Until(c.worker, time.Second, channel)
 
 	//Wait until some object is added into channel
@@ -77,5 +76,24 @@ func (c *Controller) run(channel <-chan struct{}) {
 }
 
 func (c *Controller) worker() {
+	// loop till processItem returns true, on false it will wait for a second and then again this function will be called by run()
+	for c.processNextItem() {
 
+	}
+}
+
+func (c *Controller) processNextItem() bool {
+	// process the items from queue
+	fmt.Printf("Processing the items from queue\n")
+	item, shutdown := c.p4WorkQueue.Get()
+
+	// Delete the item from queue, so that we wont process it again
+	defer c.p4WorkQueue.Forget(item)
+
+	if shutdown {
+		return false
+	}
+
+	// Now got the item from queue
+	return true
 }

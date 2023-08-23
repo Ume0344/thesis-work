@@ -56,7 +56,7 @@ func (in *P4) DeepCopyObject() runtime.Object {
 func (in *P4List) DeepCopyInto(out *P4List) {
 	*out = *in
 	out.TypeMeta = in.TypeMeta
-	in.ObjectMeta.DeepCopyInto(&out.ObjectMeta)
+	in.ListMeta.DeepCopyInto(&out.ListMeta)
 	if in.Items != nil {
 		in, out := &in.Items, &out.Items
 		*out = make([]P4, len(*in))
