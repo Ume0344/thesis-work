@@ -3,7 +3,7 @@
 1- Create types.go
 - This file will have the definition of P4 object and P4 Specs.
 
-2- Create types.go 
+2- Create register.go
 - This file will register the P4 type to kubernetes scheme.
 
 3- We also need doc.go file where we define the global tags (tags are the way to control the behavior of code-generators)

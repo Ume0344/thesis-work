@@ -21,6 +21,11 @@ func init() {
 	SchemeBuilder.Register(addKnownTypes)
 }
 
+// Resource takes an unqualified resource and returns a Group qualified GroupResource
+func Resource(resource string) schema.GroupResource {
+	return SchemeGroupVersion.WithResource(resource).GroupResource()
+}
+
 func addKnownTypes(scheme *runtime.Scheme) error {
 	// Add the types P4 and P4List to scheme
 	scheme.AddKnownTypes(SchemeGroupVersion, &P4{}, &P4List{})

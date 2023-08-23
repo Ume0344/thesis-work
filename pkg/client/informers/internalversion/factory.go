@@ -29,7 +29,7 @@ import (
 	runtime "k8s.io/apimachinery/pkg/runtime"
 	schema "k8s.io/apimachinery/pkg/runtime/schema"
 	cache "k8s.io/client-go/tools/cache"
-	internalclientset "k8s.io/kubernetes/pkg/client/clientset_generated/internalclientset"
+	internalclientset "p4kube/pkg/client/clientset/versioned"
 )
 
 // SharedInformerOption defines the functional option type for SharedInformerFactory.

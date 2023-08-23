@@ -29,7 +29,7 @@ import (
 	runtime "k8s.io/apimachinery/pkg/runtime"
 	watch "k8s.io/apimachinery/pkg/watch"
 	cache "k8s.io/client-go/tools/cache"
-	internalclientset "k8s.io/kubernetes/pkg/client/clientset_generated/internalclientset"
+	internalclientset "p4kube/pkg/client/clientset/versioned"
 )
 
 // P4Informer provides access to a shared informer and lister for
@@ -62,13 +62,13 @@ func NewFilteredP4Informer(client internalclientset.Interface, namespace string,
 				if tweakListOptions != nil {
 					tweakListOptions(&options)
 				}
-				return client.P4kube().P4s(namespace).List(context.TODO(), options)
+				return client.P4kubeV1alpha1().P4s(namespace).List(context.TODO(), options)
 			},
 			WatchFunc: func(options v1.ListOptions) (watch.Interface, error) {
 				if tweakListOptions != nil {
 					tweakListOptions(&options)
 				}
-				return client.P4kube().P4s(namespace).Watch(context.TODO(), options)
+				return client.P4kubeV1alpha1().P4s(namespace).Watch(context.TODO(), options)
 			},
 		},
 		&v1alpha1.P4{},

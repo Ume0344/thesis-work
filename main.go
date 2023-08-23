@@ -1,14 +1,14 @@
 package main
 
 import (
-	"context"
 	"flag"
 	"fmt"
 	"path/filepath"
+	"time"
 
-	client "p4kube/pkg/client/clientset/versioned"
+	p4clientset "p4kube/pkg/client/clientset/versioned"
+	p4informers "p4kube/pkg/client/informers/internalversion"
 
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/clientcmd"
 	"k8s.io/client-go/util/homedir"
@@ -38,18 +38,17 @@ func main() {
 
 	}
 
-	clientset, err := client.NewForConfig(config)
+	p4client, err := p4clientset.NewForConfig(config)
 	if err != nil {
-		fmt.Printf("Error getting clientset, %s", err.Error())
+		fmt.Printf("Error getting p4client, %s", err.Error())
 	}
 
-	p4, err := clientset.P4kubeV1alpha1().P4s("").List(context.Background(), metav1.ListOptions{})
+	p4informers := p4informers.NewSharedInformerFactory(p4client, 10*time.Minute)
 
-	if err != nil {
-		fmt.Printf("Cant get the list of P4s due to %s", err.Error())
-	}
+	c := newController(p4client, p4informers.P4kube().InternalVersion().P4s())
 
-	for i, v := range p4.Items {
-		fmt.Printf("p4-%d: %v \n", i, v.Name)
-	}
+	channel := make(chan struct{})
+
+	p4informers.Start(channel)
+	c.run(channel)
 }
