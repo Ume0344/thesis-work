@@ -2,7 +2,8 @@ apiVersion: "p4kube.comnets/v1alpha1"
 kind: P4
 metadata:
   name: testuhabiba2-p4
+  namespace: p4-namespace
 spec:
-  p4ProgramLocation: "/home/apmec/kubernetes-project"
-  compilerCommand: "./t4p4s.sh :l2fwd"
+  p4ProgramLocation: "./examples/l2fwd-gen.p4"
+  compilerDirectory: "/home/$(whoami)/t4p4s"
   replicas: 2

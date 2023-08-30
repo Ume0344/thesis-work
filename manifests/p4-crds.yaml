@@ -17,12 +17,12 @@ spec:
               properties:
                 p4ProgramLocation:
                   type: string
-                compilerCommand:
+                compilerDirectory:
                   type: string
                 replicas:
                   type: integer
                   minimum: 1
-              required: ["p4ProgramLocation", "compilerCommand"]
+              required: ["p4ProgramLocation", "compilerDirectory"]
           required: ["spec"]
   scope: Namespaced
   names:

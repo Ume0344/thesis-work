@@ -14,8 +14,8 @@ type P4 struct {
 }
 
 type P4Spec struct {
-	P4Program       string `json:"p4ProgramLocation"`
-	CompilerCommand string `json:"compilerCommand"`
+	P4Program         string `json:"p4ProgramLocation"`
+	CompilerDirectory string `json:"compilerDirectory"`
 }
 
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
