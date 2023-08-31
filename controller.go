@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	"fmt"
 	"os"
 	"os/exec"
@@ -11,6 +12,8 @@ import (
 	p4lister "p4kube/pkg/client/listers/v1alpha1/internalversion"
 
 	v1alpha1 "p4kube/pkg/apis/p4kube/v1alpha1"
+
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	"k8s.io/apimachinery/pkg/util/wait"
 	"k8s.io/client-go/tools/cache"
@@ -52,7 +55,7 @@ func newController(
 func (c *Controller) handleAdd(obj interface{}) {
 	// Add objects to queue
 	c.p4WorkQueue.Add(obj)
-	fmt.Printf("Creating a new P4 resource\n")
+	fmt.Printf("Handling a P4 resource\n")
 }
 
 func (c *Controller) handleDel(obj interface{}) {
@@ -89,7 +92,7 @@ func (c *Controller) worker() {
 
 func (c *Controller) processNextItem() bool {
 	// process the items from queue
-	fmt.Printf("Processing the items from queue\n")
+	fmt.Printf("Processing the items from queue %v\n", c.p4WorkQueue.Len())
 	item, shutdown := c.p4WorkQueue.Get()
 
 	// Delete the item from queue, so that we wont process it again
@@ -116,38 +119,61 @@ func (c *Controller) processNextItem() bool {
 	p4resource, err := c.p4Lister.P4s(ns).Get(name)
 
 	if err != nil {
-		fmt.Printf("Error getting p4resource %s\n", err.Error())
+		fmt.Printf("Error getting P4 resource %s\n", err.Error())
 		return false
 	}
 
 	// %+v for printing struct
-	fmt.Printf("p4 resource specs are :%+v\n", p4resource.Spec)
+	fmt.Printf("P4 resource specs are :%+v\n", p4resource.Spec)
 
-	c.handleP4Resource(p4resource.Spec)
+	// Get the item, check its status, if status is deployed, forget it and
+	// donot call handleP4Resource
+	deployment := c.handleP4Resource(p4resource)
+
+	if deployment {
+		c.p4WorkQueue.Forget(item)
+	}
 
 	return true
 }
 
 // Handler Function to process created p4 spec
-func (c *Controller) handleP4Resource(p4Spec v1alpha1.P4Spec) {
-	//cmd := exec.Command("/bin/sh", "-c", "cd /home/$(whoami)/t4p4s; ./t4p4s.sh :l2fwd model=v1model")
-	cmdExec := fmt.Sprintf("cd %v; ./t4p4s.sh %v model=v1model", p4Spec.CompilerDirectory, p4Spec.P4Program)
-	cmd := exec.Command("/bin/sh", "-c", cmdExec)
+func (c *Controller) handleP4Resource(p4resource *v1alpha1.P4) bool {
+	var deploy bool
 
-	fmt.Print("Command to be executed : ", cmd, "\n")
+	if p4resource.Status.Progress == "Deployed" {
+		fmt.Printf("P4 resource %s already deployed. Removing it from the queue.\n", p4resource.Name)
+		deploy = true
+		return deploy
 
-	// Print output of command, also the error if command not successful.
-	cmd.Stdout = os.Stdout
-	cmd.Stderr = os.Stderr
+	} else {
+		cmdExec := fmt.Sprintf("cd %v; ./t4p4s.sh %v model=v1model", p4resource.Spec.CompilerDirectory, p4resource.Spec.P4Program)
+		cmd := exec.Command("/bin/sh", "-c", cmdExec)
+		fmt.Print("Command to be executed: ", cmd, "\n")
 
-	err := cmd.Run()
-	if err != nil {
-		fmt.Printf("While running command, Getting error: %s\n", err.Error())
-		fmt.Print("Cancelling the command\n")
-		cmd.Cancel()
-		// TODO: if command is not successfully executed, delete the created resource
-		return
+		// Print output of command, also the error if command not successful.
+		fmt.Println("Showing the logs of deploying P4 resource with t4p4s")
+		cmd.Stdout = os.Stdout
+		cmd.Stderr = os.Stderr
+
+		err := cmd.Run()
+
+		if err == nil {
+			p4resource.Status.Progress = "Deployed"
+			deploy = true
+		} else {
+			fmt.Printf("While running command, Getting error: %s\n", err.Error())
+			p4resource.Status.Progress = "Deployment Unsuccessful"
+			fmt.Printf("P4 resource %s could not be deployed, deleting the resource\n", p4resource.Name)
+			fmt.Print("Cancelling the command\n")
+			// cmd.Cancel()
+			// TODO: if command is not successfully executed, delete the created resource
+			deploy = false
+		}
+
+		p4resource, err := c.p4Client.P4kubeV1alpha1().P4s(p4resource.Namespace).UpdateStatus(context.Background(), p4resource, metav1.UpdateOptions{})
+		fmt.Printf("Updated P4 resource status after deploying it with t4p4s: %s\n", p4resource.Status.Progress)
 	}
 
-	return
+	return deploy
 }

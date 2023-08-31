@@ -101,6 +101,18 @@ func (c *FakeP4s) Update(ctx context.Context, p4 *v1alpha1.P4, opts v1.UpdateOpt
 	return obj.(*v1alpha1.P4), err
 }
 
+// UpdateStatus was generated because the type contains a Status member.
+// Add a +genclient:noStatus comment above the type to avoid generating UpdateStatus().
+func (c *FakeP4s) UpdateStatus(ctx context.Context, p4 *v1alpha1.P4, opts v1.UpdateOptions) (*v1alpha1.P4, error) {
+	obj, err := c.Fake.
+		Invokes(testing.NewUpdateSubresourceAction(p4sResource, "status", c.ns, p4), &v1alpha1.P4{})
+
+	if obj == nil {
+		return nil, err
+	}
+	return obj.(*v1alpha1.P4), err
+}
+
 // Delete takes name of the p4 and deletes it. Returns an error if one occurs.
 func (c *FakeP4s) Delete(ctx context.Context, name string, opts v1.DeleteOptions) error {
 	_, err := c.Fake.

@@ -4,6 +4,7 @@ metadata:
   name: p4s.p4kube.comnets
 spec:
   group: p4kube.comnets
+  scope: Namespaced
   versions:
     - name: v1alpha1
       served: true
@@ -23,11 +24,23 @@ spec:
                   type: integer
                   minimum: 1
               required: ["p4ProgramLocation", "compilerDirectory"]
+            status:
+              type: object
+              properties:
+                progress:
+                  type: string
           required: ["spec"]
-  scope: Namespaced
+      subresources:
+        status: {}
   names:
     plural: p4s
     singular: p4
     kind: P4
     shortNames:
     - p4
+status:
+  acceptedNames:
+    kind: ""
+    plural: ""
+  conditions: []
+  storedVersions: []

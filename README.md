@@ -18,7 +18,7 @@
 
 - DeepCopy Objects - To deepcopy objects, to register struct to kubernetes as k8s objects
 
-5- Get the code-generators in home/apmec/go/k8s.io by; 
+5- Get the code-generators in home/apmec/go/src/k8s.io/ by;
 
 `git clone https://github.com/kubernetes/code-generator.git`
 
