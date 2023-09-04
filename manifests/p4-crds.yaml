@@ -32,6 +32,13 @@ spec:
           required: ["spec"]
       subresources:
         status: {}
+      additionalPrinterColumns:
+      - name: Status
+        type: string
+        jsonPath: .status.progress
+      - name: Age
+        type: date
+        jsonPath: .metadata.creationTimestamp
   names:
     plural: p4s
     singular: p4
