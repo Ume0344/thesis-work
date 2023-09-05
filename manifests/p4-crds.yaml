@@ -20,10 +20,12 @@ spec:
                   type: string
                 compilerDirectory:
                   type: string
+                compilerCommand:
+                  type: string
                 replicas:
                   type: integer
                   minimum: 1
-              required: ["p4ProgramLocation", "compilerDirectory"]
+              required: ["p4ProgramLocation", "compilerDirectory","compilerCommand"]
             status:
               type: object
               properties:

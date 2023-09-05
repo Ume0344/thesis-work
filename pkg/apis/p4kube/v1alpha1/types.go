@@ -17,6 +17,7 @@ type P4 struct {
 type P4Spec struct {
 	P4Program         string `json:"p4ProgramLocation"`
 	CompilerDirectory string `json:"compilerDirectory"`
+	CompilerCommand   string `json:"compilerCommand"`
 }
 
 type P4Status struct {

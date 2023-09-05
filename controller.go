@@ -147,7 +147,7 @@ func (c *Controller) handleP4Resource(p4resource *v1alpha1.P4) bool {
 		return deploy
 
 	} else {
-		cmdExec := fmt.Sprintf("cd %v; ./t4p4s.sh %v model=v1model", p4resource.Spec.CompilerDirectory, p4resource.Spec.P4Program)
+		cmdExec := fmt.Sprintf("cd %v; %v %v", p4resource.Spec.CompilerDirectory, p4resource.Spec.CompilerCommand, p4resource.Spec.P4Program)
 		cmd := exec.Command("/bin/sh", "-c", cmdExec)
 		fmt.Print("Command to be executed: ", cmd, "\n")
 
