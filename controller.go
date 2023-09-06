@@ -102,6 +102,7 @@ func (c *Controller) processNextItem() bool {
 		return false
 	}
 
+	startTime := time.Now()
 	// Generating key for each item in queue
 	key, err := cache.MetaNamespaceKeyFunc(item)
 	if err != nil {
@@ -128,7 +129,7 @@ func (c *Controller) processNextItem() bool {
 
 	// Get the item, check its status, if status is deployed, forget it and
 	// donot call handleP4Resource
-	deployment := c.handleP4Resource(p4resource)
+	deployment := c.handleP4Resource(p4resource, startTime)
 
 	if deployment {
 		c.p4WorkQueue.Forget(item)
@@ -138,7 +139,7 @@ func (c *Controller) processNextItem() bool {
 }
 
 // Handler Function to process created p4 spec
-func (c *Controller) handleP4Resource(p4resource *v1alpha1.P4) bool {
+func (c *Controller) handleP4Resource(p4resource *v1alpha1.P4, startTime time.Time) bool {
 	var deploy bool
 
 	if p4resource.Status.Progress == "Deployed" {
@@ -172,7 +173,10 @@ func (c *Controller) handleP4Resource(p4resource *v1alpha1.P4) bool {
 		}
 
 		p4resource, err := c.p4Client.P4kubeV1alpha1().P4s(p4resource.Namespace).UpdateStatus(context.Background(), p4resource, metav1.UpdateOptions{})
+
+		stopTime := time.Since(startTime)
 		fmt.Printf("Updated P4 resource status after deploying it with t4p4s: %s\n", p4resource.Status.Progress)
+		fmt.Printf("Provisioning time for P4 Resource: %v\n", stopTime)
 	}
 
 	return deploy
