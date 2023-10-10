@@ -10,14 +10,49 @@ import (
 	p4clientset "p4kube/pkg/client/clientset/versioned"
 	p4informers "p4kube/pkg/client/informers/internalversion"
 
+	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
+	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/clientcmd"
 	"k8s.io/client-go/util/homedir"
 )
 
 func main() {
+	// Create configuration
+	config := getConfig()
+
+	// Create k8s client
+	k8sclient, err := kubernetes.NewForConfig(config)
+	if err != nil {
+		fmt.Printf("Error getting k8sclient, %s", err.Error())
+	}
+
+	// Create p4 client
+	p4client, err := p4clientset.NewForConfig(config)
+	if err != nil {
+		fmt.Printf("Error getting p4client, %s", err.Error())
+	}
+
+	// List nodes
+	nodeList := getNodes(*k8sclient)
+	for _, node := range nodeList.Items {
+		fmt.Printf("%s\n", node.Name)
+	}
+
+	p4informers := p4informers.NewSharedInformerFactory(p4client, 10*time.Minute)
+
+	c := newController(p4client, p4informers.P4kube().InternalVersion().P4s())
+
+	channel := make(chan struct{})
+
+	p4informers.Start(channel)
+	c.run(channel)
+
+}
+
+func getConfig() *rest.Config {
 	var kubeconfigpath *string
 
 	// create filepath of kube config file which is at /home/apmec/.kube/config
@@ -40,24 +75,11 @@ func main() {
 		}
 
 	}
+	return config
+}
 
-	p4client, err := p4clientset.NewForConfig(config)
-	if err != nil {
-		fmt.Printf("Error getting p4client, %s", err.Error())
-	}
+func getNodes(k8sclient kubernetes.Clientset) *v1.NodeList {
+	nodelist, _ := k8sclient.CoreV1().Nodes().List(context.Background(), metav1.ListOptions{})
 
-	p4s, err := p4client.P4kubeV1alpha1().P4s("p4-namespace").List(context.Background(), metav1.ListOptions{})
-
-	for i, v := range p4s.Items {
-		fmt.Printf("%d-%s\n", i, v.Name)
-	}
-
-	p4informers := p4informers.NewSharedInformerFactory(p4client, 10*time.Minute)
-
-	c := newController(p4client, p4informers.P4kube().InternalVersion().P4s())
-
-	channel := make(chan struct{})
-
-	p4informers.Start(channel)
-	c.run(channel)
+	return nodelist
 }

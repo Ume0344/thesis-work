@@ -124,6 +124,13 @@ func (c *Controller) processNextItem() bool {
 		return false
 	}
 
+	// Here, schedule the p4resource.
+	// Steps:
+	// 1- Look for all available nodes
+	// 2- Randomly select the node out of it. There must be a random selection algo.
+	// 3- Bind the p4resource to that node.
+	// 4- Then, call the function handle p4resource
+
 	// %+v for printing struct
 	fmt.Printf("P4 resource specs are :%+v\n", p4resource.Spec)
 
