@@ -12,33 +12,18 @@ import (
 
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
+	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/clientcmd"
 	"k8s.io/client-go/util/homedir"
 )
 
 func main() {
-	var kubeconfigpath *string
+	config := getConfig()
 
-	// create filepath of kube config file which is at /home/apmec/.kube/config
-	if home := homedir.HomeDir(); home != "" {
-		kubeconfigpath = flag.String("kubeconfig", filepath.Join(home, ".kube", "config"), "(optional) absolute path to the kubeconfig file")
-	} else {
-		kubeconfigpath = flag.String("kubeconfig", "", "absolute path to the kubeconfig file")
-	}
-
-	flag.Parse()
-
-	// creates configuration based on config path
-	config, err := clientcmd.BuildConfigFromFlags("", *kubeconfigpath)
+	k8sclient, err := kubernetes.NewForConfig(config)
 	if err != nil {
-		fmt.Printf("Could not get the config file due to %s", err.Error())
-
-		config, err = rest.InClusterConfig()
-		if err != nil {
-			fmt.Printf("Error %s, getting incluster config", err.Error())
-		}
-
+		fmt.Printf("Error getting k8sclient, %s", err.Error())
 	}
 
 	p4client, err := p4clientset.NewForConfig(config)
@@ -54,10 +39,34 @@ func main() {
 
 	p4informers := p4informers.NewSharedInformerFactory(p4client, 10*time.Minute)
 
-	c := newController(p4client, p4informers.P4kube().InternalVersion().P4s())
+	c := newController(*k8sclient, p4client, p4informers.P4kube().InternalVersion().P4s())
 
 	channel := make(chan struct{})
 
 	p4informers.Start(channel)
 	c.run(channel)
+}
+
+func getConfig() *rest.Config {
+	var kubeconfigpath *string
+
+	// create filepath of kube config file which is at /home/apmec/.kube/config
+	if home := homedir.HomeDir(); home != "" {
+		kubeconfigpath = flag.String("kubeconfig", filepath.Join(home, ".kube", "config"), "(optional) absolute path to the kubeconfig file")
+	} else {
+		kubeconfigpath = flag.String("kubeconfig", "", "absolute path to the kubeconfig file")
+	}
+	flag.Parse()
+
+	// creates configuration based on config path
+	config, err := clientcmd.BuildConfigFromFlags("", *kubeconfigpath)
+	if err != nil {
+		fmt.Printf("Could not get the config file due to %s", err.Error())
+
+		config, err = rest.InClusterConfig()
+		if err != nil {
+			fmt.Printf("Error %s, getting incluster config", err.Error())
+		}
+	}
+	return config
 }

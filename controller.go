@@ -16,6 +16,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	"k8s.io/apimachinery/pkg/util/wait"
+	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/tools/cache"
 	"k8s.io/client-go/util/workqueue"
 )
@@ -23,6 +24,7 @@ import (
 type Controller struct {
 	// Controller Struct which has attributes k8s standard clientset, p4 generated clientset
 	// generated lister, cache and workqueue
+	k8sclient   kubernetes.Clientset
 	p4Client    p4clientset.Interface
 	p4Lister    p4lister.P4Lister
 	p4Synched   cache.InformerSynced //if cache has been synched with api server
@@ -30,6 +32,7 @@ type Controller struct {
 }
 
 func newController(
+	k8sclient kubernetes.Clientset,
 	p4Client p4clientset.Interface,
 	p4Informer p4informers.P4Informer,
 
@@ -38,6 +41,7 @@ func newController(
 	//handler functions for adding and deleting p4 resources.
 
 	c := &Controller{
+		k8sclient:   k8sclient,
 		p4Client:    p4Client,
 		p4Lister:    p4Informer.Lister(),
 		p4Synched:   p4Informer.Informer().HasSynced,
@@ -126,6 +130,9 @@ func (c *Controller) processNextItem() bool {
 
 	// %+v for printing struct
 	fmt.Printf("P4 resource specs are :%+v\n", p4resource.Spec)
+
+	fmt.Println("Finding available nodes")
+	findNodes(c.k8sclient)
 
 	// Get the item, check its status, if status is deployed, forget it and
 	// donot call handleP4Resource
