@@ -3,8 +3,7 @@ package main
 import (
 	"context"
 	"fmt"
-	"os"
-	"os/exec"
+	"log"
 	"time"
 
 	p4clientset "p4kube/pkg/client/clientset/versioned"
@@ -19,6 +18,10 @@ import (
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/tools/cache"
 	"k8s.io/client-go/util/workqueue"
+)
+
+const (
+	port = "50051"
 )
 
 type Controller struct {
@@ -131,9 +134,6 @@ func (c *Controller) processNextItem() bool {
 	// %+v for printing struct
 	fmt.Printf("P4 resource specs are :%+v\n", p4resource.Spec)
 
-	fmt.Println("Finding available nodes")
-	findNodes(c.k8sclient)
-
 	// Get the item, check its status, if status is deployed, forget it and
 	// donot call handleP4Resource
 	deployment := c.handleP4Resource(p4resource, startTime)
@@ -155,22 +155,22 @@ func (c *Controller) handleP4Resource(p4resource *v1alpha1.P4, startTime time.Ti
 		return deploy
 
 	} else {
-		cmdExec := fmt.Sprintf("cd %v; %v %v", p4resource.Spec.CompilerDirectory, p4resource.Spec.CompilerCommand, p4resource.Spec.P4Program)
-		cmd := exec.Command("/bin/sh", "-c", cmdExec)
-		fmt.Print("Command to be executed: ", cmd, "\n")
 
-		// Print output of command, also the error if command not successful.
-		fmt.Println("Showing the logs of deploying P4 resource with t4p4s")
-		cmd.Stdout = os.Stdout
-		cmd.Stderr = os.Stderr
+		selectedNode := findRandomNode(c.k8sclient)
+		log.Printf("Found a Node for P4 resource to deploy: %v", selectedNode.Name)
 
-		err := cmd.Run()
+		nodeIpAddress := getNodeIpAddress(selectedNode)
+		log.Printf("Connecting to worker node at IP : %s", nodeIpAddress)
 
-		if err == nil {
+		nodeAddressWithPort := fmt.Sprintf("%s:%s", nodeIpAddress, port)
+		log.Printf("Address : %v", nodeAddressWithPort)
+
+		deploymentStatus := dialWorkerNode(p4resource, nodeAddressWithPort)
+
+		if deploymentStatus == "Deployed" {
 			p4resource.Status.Progress = "Deployed"
 			deploy = true
 		} else {
-			fmt.Printf("While running command, Getting error: %s\n", err.Error())
 			p4resource.Status.Progress = "Deployment Unsuccessful"
 			fmt.Printf("P4 resource %s could not be deployed, deleting the resource\n", p4resource.Name)
 			fmt.Print("Cancelling the command\n")
@@ -179,7 +179,7 @@ func (c *Controller) handleP4Resource(p4resource *v1alpha1.P4, startTime time.Ti
 			deploy = false
 		}
 
-		p4resource, err := c.p4Client.P4kubeV1alpha1().P4s(p4resource.Namespace).UpdateStatus(context.Background(), p4resource, metav1.UpdateOptions{})
+		p4resource, _ := c.p4Client.P4kubeV1alpha1().P4s(p4resource.Namespace).UpdateStatus(context.Background(), p4resource, metav1.UpdateOptions{})
 
 		stopTime := time.Since(startTime)
 		fmt.Printf("Updated P4 resource status after deploying it with t4p4s: %s\n", p4resource.Status.Progress)
