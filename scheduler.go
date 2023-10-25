@@ -2,16 +2,23 @@ package main
 
 import (
 	"context"
-	"fmt"
+	"math/rand"
 
+	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
 )
 
-func findNodes(k8sclient kubernetes.Clientset) {
+// Scheduling UseCase1
+func findRandomNode(k8sclient kubernetes.Clientset) v1.Node {
 	nodeList, _ := k8sclient.CoreV1().Nodes().List(context.Background(), metav1.ListOptions{})
+	// Finding a random node to schedule p4 resource
+	selectedNode := nodeList.Items[rand.Intn(len(nodeList.Items))]
 
-	for _, node := range nodeList.Items {
-		fmt.Printf("%s\n", node.Name)
-	}
+	return selectedNode
+}
+
+func getNodeIpAddress(node v1.Node) string {
+	ipAddress := node.Status.Addresses
+	return ipAddress[0].Address
 }
