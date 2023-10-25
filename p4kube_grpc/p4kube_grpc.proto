@@ -1,0 +1,20 @@
+syntax = "proto3";
+
+package p4kube_grpc;
+
+option go_package = "./p4kube";
+
+service P4DeploymentService {
+  rpc DeployP4 (P4Resource) returns (stream DeploymentStatus) {}
+}
+
+// The request message containing the p4resource's details.
+message P4Resource {
+  string name = 1;
+  string command = 2;
+}
+
+// The response message containing status of P4 deployment.
+message DeploymentStatus {
+  string status = 2;
+}
