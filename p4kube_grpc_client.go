@@ -15,7 +15,7 @@ import (
 
 func checkStatus(finished chan string, stream pb.P4DeploymentService_DeployP4Client) {
 	var deploymentStatus *pb.DeploymentStatus
-	log.Print(deploymentStatus)
+
 	for {
 		deploymentStatus, _ = stream.Recv()
 		log.Printf("Status: %v\n", deploymentStatus)
@@ -66,6 +66,7 @@ func dialWorkerNode(p4resource *v1alpha1.P4, address string) string {
 
 	finished := make(chan string)
 
+	log.Println("Waiting for workerNode to deploy P4")
 	go checkStatus(finished, stream)
 
 	deploymentStatus := <-finished
