@@ -33,8 +33,6 @@ spec:
               properties:
                 progress:
                   type: string
-                node:
-                  type: string
           required: ["spec"]
       subresources:
         status: {}
@@ -42,9 +40,6 @@ spec:
       - name: Status
         type: string
         jsonPath: .status.progress
-      - name: Node
-        type: string
-        jsonPath: .status.node
       - name: Age
         type: date
         jsonPath: .metadata.creationTimestamp

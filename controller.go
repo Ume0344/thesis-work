@@ -177,7 +177,6 @@ func (c *Controller) handleP4Resource(p4resource *v1alpha1.P4, startTime time.Ti
 
 		if deploymentStatus == "Deployed" {
 			p4resource.Status.Progress = "Deployed"
-			p4resource.Status.Node = selectedNode.Name
 			deploy = true
 		} else {
 			p4resource.Status.Progress = "Deployment Unsuccessful"
@@ -196,8 +195,4 @@ func (c *Controller) handleP4Resource(p4resource *v1alpha1.P4, startTime time.Ti
 	}
 
 	return deploy
-}
-
-func handleP4Split(p4resource *v1alpha1.P4) {
-
 }
