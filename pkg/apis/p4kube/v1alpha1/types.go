@@ -23,6 +23,7 @@ type P4Spec struct {
 
 type P4Status struct {
 	Progress string `json:"progress"`
+	Node     string `json:"node"`
 }
 
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
