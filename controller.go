@@ -14,6 +14,7 @@ import (
 
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
+	v1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/util/wait"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/tools/cache"
@@ -148,6 +149,7 @@ func (c *Controller) processNextItem() bool {
 // Handler Function to process created p4 spec
 func (c *Controller) handleP4Resource(p4resource *v1alpha1.P4, startTime time.Time) bool {
 	var deploy bool
+	var selectedNode v1.Node
 
 	if p4resource.Status.Progress == "Deployed" {
 		fmt.Printf("P4 resource %s already deployed. Removing it from the queue.\n", p4resource.Name)
@@ -155,9 +157,15 @@ func (c *Controller) handleP4Resource(p4resource *v1alpha1.P4, startTime time.Ti
 		return deploy
 
 	} else {
+		if p4resource.Spec.TargetNode == "" {
+			log.Println("Target Node is not mentioned in p4 manifest file, scheduling it to a random available node")
+			selectedNode = findRandomNode(c.k8sclient)
+		} else {
+			log.Printf("Target Node mentioned in p4 manifest file: %s", p4resource.Spec.TargetNode)
+			selectedNode = findTargetNode(c.k8sclient, p4resource.Spec.TargetNode)
+		}
 
-		selectedNode := findRandomNode(c.k8sclient)
-		log.Printf("Found a Node for P4 resource to deploy: %v", selectedNode.Name)
+		log.Printf("Scheduling P4 resource to Node: %v", selectedNode.Name)
 
 		nodeIpAddress := getNodeIpAddress(selectedNode)
 		log.Printf("Connecting to worker node at IP : %s", nodeIpAddress)

@@ -12,6 +12,33 @@ import (
 
 // Scheduling UseCase1
 func findRandomNode(k8sclient kubernetes.Clientset) v1.Node {
+	workerNodeList := getWorkerNodeList(k8sclient)
+	// Finding a random node to schedule p4 resource
+	selectedNode := workerNodeList[rand.Intn(len(workerNodeList))]
+
+	return selectedNode
+}
+
+func findTargetNode(k8sclient kubernetes.Clientset, targetNode string) v1.Node {
+	workerNodeList := getWorkerNodeList(k8sclient)
+	var targetNodeSpec v1.Node
+
+	for _, node := range workerNodeList {
+		if node.Name == targetNode {
+			targetNodeSpec = node
+			break
+		}
+	}
+
+	return targetNodeSpec
+}
+
+func getNodeIpAddress(node v1.Node) string {
+	ipAddress := node.Status.Addresses
+	return ipAddress[0].Address
+}
+
+func getWorkerNodeList(k8sclient kubernetes.Clientset) []v1.Node {
 	var workerNodeList []v1.Node
 	var masterFlag bool
 
@@ -30,18 +57,10 @@ func findRandomNode(k8sclient kubernetes.Clientset) v1.Node {
 		}
 	}
 
-	log.Println("Printing avaialable worker nodes")
+	log.Println("Avaialable worker nodes")
 	for i, node := range workerNodeList {
 		log.Printf("worker node %d: %s", i+1, node.Name)
 	}
 
-	// Finding a random node to schedule p4 resource
-	selectedNode := workerNodeList[rand.Intn(len(workerNodeList))]
-
-	return selectedNode
-}
-
-func getNodeIpAddress(node v1.Node) string {
-	ipAddress := node.Status.Addresses
-	return ipAddress[0].Address
+	return workerNodeList
 }

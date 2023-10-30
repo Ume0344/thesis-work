@@ -22,6 +22,8 @@ spec:
                   type: string
                 compilerCommand:
                   type: string
+                targetNode:
+                  type: string
                 replicas:
                   type: integer
                   minimum: 1
