@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"log"
+	"strings"
 	"time"
 
 	p4clientset "p4kube/pkg/client/clientset/versioned"
@@ -157,10 +158,15 @@ func (c *Controller) handleP4Resource(p4resource *v1alpha1.P4, startTime time.Ti
 		return deploy
 
 	} else {
-		if p4resource.Spec.TargetNode == "" {
+		// 'split' is a check if user wants p4 deployment in phases
+		split := c.splitCheck(p4resource.Spec.CompilerCommand)
+		if split {
+			log.Println("Deployment is in 3 phases")
+			selectedNode = scheduleSplittedResource(c.k8sclient, p4resource, c.p4Client)
+		} else if p4resource.Spec.TargetNode == "" {
 			log.Println("Target Node is not mentioned in p4 manifest file, scheduling it to a random available node")
 			selectedNode = findRandomNode(c.k8sclient)
-		} else {
+		} else if p4resource.Spec.TargetNode != "" {
 			log.Printf("Target Node mentioned in p4 manifest file: %s", p4resource.Spec.TargetNode)
 			selectedNode = findTargetNode(c.k8sclient, p4resource.Spec.TargetNode)
 		}
@@ -174,26 +180,50 @@ func (c *Controller) handleP4Resource(p4resource *v1alpha1.P4, startTime time.Ti
 		log.Printf("Address : %v", nodeAddressWithPort)
 
 		deploymentStatus := dialWorkerNode(p4resource, nodeAddressWithPort)
-
-		if deploymentStatus == "Deployed" {
-			p4resource.Status.Progress = "Deployed"
-			p4resource.Status.Node = selectedNode.Name
-			deploy = true
-		} else {
-			p4resource.Status.Progress = "Deployment Unsuccessful"
-			fmt.Printf("P4 resource %s could not be deployed, deleting the resource\n", p4resource.Name)
-			fmt.Print("Cancelling the command\n")
-			// cmd.Cancel()
-			// TODO: if command is not successfully executed, delete the created resource
-			deploy = false
-		}
-
-		p4resource, _ := c.p4Client.P4kubeV1alpha1().P4s(p4resource.Namespace).UpdateStatus(context.Background(), p4resource, metav1.UpdateOptions{})
+		deploy = c.updateP4Status(p4resource, deploymentStatus, selectedNode)
 
 		stopTime := time.Since(startTime)
-		fmt.Printf("Updated P4 resource status after deploying it with t4p4s: %s\n", p4resource.Status.Progress)
+
 		fmt.Printf("Provisioning time for P4 Resource: %v\n", stopTime)
 	}
 
 	return deploy
+}
+
+// Updates the P4 status after an attempt for its deployment
+func (c *Controller) updateP4Status(p4resource *v1alpha1.P4, deploymentStatus string, node v1.Node) bool {
+	var deploy bool
+	if deploymentStatus == "Deployed" {
+		p4resource.Status.Progress = "Deployed"
+		p4resource.Status.Node = node.Name
+		deploy = true
+	} else {
+		p4resource.Status.Progress = "Deployment Unsuccessful"
+		fmt.Printf("P4 resource %s could not be deployed, deleting the resource\n", p4resource.Name)
+		fmt.Print("Cancelling the command\n")
+		// cmd.Cancel()
+		// TODO: if command is not successfully executed, delete the created resource
+		deploy = false
+	}
+	fmt.Printf("Updated P4 resource status after deploying it with t4p4s: %s\n", p4resource.Status.Progress)
+
+	_, err := c.p4Client.P4kubeV1alpha1().P4s(p4resource.Namespace).UpdateStatus(context.Background(), p4resource, metav1.UpdateOptions{})
+	if err != nil {
+		log.Printf("Error updating the p4 resource: %s", err.Error())
+	}
+
+	return deploy
+}
+
+// Check if user wants deployment in phases based compiler command mentioned in manifest file
+func (c *Controller) splitCheck(compilerCommand string) bool {
+	var flag bool
+
+	if strings.Contains(compilerCommand, " p4 ") || strings.Contains(compilerCommand, " c ") || strings.Contains(compilerCommand, " run ") {
+		flag = true
+	} else {
+		flag = false
+	}
+
+	return flag
 }
