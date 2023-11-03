@@ -19,11 +19,15 @@ type P4Spec struct {
 	CompilerDirectory string `json:"compilerDirectory"`
 	CompilerCommand   string `json:"compilerCommand"`
 	TargetNode        string `json:"targetNode"`
+	NetworkFunction   string `json:"networkFunction"`
+	DeploymentPhase   string `json:"deploymentPhase"`
 }
 
 type P4Status struct {
-	Progress string `json:"progress"`
-	Node     string `json:"node"`
+	Progress        string `json:"progress"`
+	Node            string `json:"node"`
+	DeploymentPhase string `json:"deploymentPhase"`
+	NetworkFunction string `json:"networkFunction"`
 }
 
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object

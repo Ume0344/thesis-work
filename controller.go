@@ -196,6 +196,8 @@ func (c *Controller) updateP4Status(p4resource *v1alpha1.P4, deploymentStatus st
 	if deploymentStatus == "Deployed" {
 		p4resource.Status.Progress = "Deployed"
 		p4resource.Status.Node = node.Name
+		p4resource.Status.NetworkFunction = p4resource.Spec.NetworkFunction
+		p4resource.Status.DeploymentPhase = p4resource.Spec.DeploymentPhase
 		deploy = true
 	} else {
 		p4resource.Status.Progress = "Deployment Unsuccessful"
@@ -205,7 +207,6 @@ func (c *Controller) updateP4Status(p4resource *v1alpha1.P4, deploymentStatus st
 		// TODO: if command is not successfully executed, delete the created resource
 		deploy = false
 	}
-	fmt.Printf("Updated P4 resource status after deploying it with t4p4s: %s\n", p4resource.Status.Progress)
 
 	_, err := c.p4Client.P4kubeV1alpha1().P4s(p4resource.Namespace).UpdateStatus(context.Background(), p4resource, metav1.UpdateOptions{})
 	if err != nil {
@@ -215,7 +216,7 @@ func (c *Controller) updateP4Status(p4resource *v1alpha1.P4, deploymentStatus st
 	return deploy
 }
 
-// Check if user wants deployment in phases based compiler command mentioned in manifest file
+// Check if user wants deployment in phases based on compiler command mentioned in manifest file
 func (c *Controller) splitCheck(compilerCommand string) bool {
 	var flag bool
 

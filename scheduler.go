@@ -7,8 +7,6 @@ import (
 	"p4kube/pkg/apis/p4kube/v1alpha1"
 	"p4kube/pkg/client/clientset/versioned"
 
-	"strings"
-
 	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
@@ -74,24 +72,34 @@ func scheduleSplittedResource(k8sclient kubernetes.Clientset, p4resource *v1alph
 	var nodeName string
 	var flag bool
 
-	p42c := " p4 "
-	cCompilation := " c "
+	p4Conversion := "p4-conversion"
+	cCompilation := "c-compilation"
+	switchCompilation := "switch-compilation"
 
 	// Check if compiler command has 'p4', if yes,. find a random node for it to be deployed.
 	// else if compiler command has 'c' in it, check if p4 conversion already executed. If conversion is already executed,
 	// get the node where conversion happend and schedule c compilation on that node
-	if strings.Contains(p4resource.Spec.CompilerCommand, p42c) {
+	if p4resource.Spec.DeploymentPhase == p4Conversion {
 		log.Printf("Deployment Phase is P4 to C conversion, finding a random node")
 		node = findRandomNode(k8sclient)
 
-	} else if strings.Contains(p4resource.Spec.CompilerCommand, cCompilation) {
+	} else if p4resource.Spec.DeploymentPhase == cCompilation {
 		log.Printf("Deployment Phase is C compilation, finding a node where build files are already present")
-		flag, nodeName = checkP4ConversionExists(p4resource, p4client)
+		flag, nodeName = checkP4ConversionExists(p4resource, p4client, p4Conversion)
 		if flag {
 			log.Printf("P4 conversion for resource %v already executed", p4resource.Name)
 			node = findTargetNode(k8sclient, nodeName)
 		} else {
-			log.Fatalf("Could not found P4 conversion for resource %v. Please first run p4 to c conversion", p4resource.Name)
+			log.Fatalf("Could not find P4 conversion for resource %v. Please first run p4 to c conversion", p4resource.Name)
+		}
+	} else if p4resource.Spec.DeploymentPhase == switchCompilation {
+		log.Printf("Deployment Phase is switch compilation, finding a node where build files are already present")
+		flag, nodeName = checkCompilationExists(p4resource, p4client, cCompilation)
+		if flag {
+			log.Printf("C compilation for resource %v already executed", p4resource.Name)
+			node = findTargetNode(k8sclient, nodeName)
+		} else {
+			log.Fatalf("Could not find C compilation for resource %v. Please first run C compilation", p4resource.Name)
 		}
 	}
 
@@ -100,17 +108,34 @@ func scheduleSplittedResource(k8sclient kubernetes.Clientset, p4resource *v1alph
 
 // Check if P42C conversion for the required p4resource already executed, if yes,
 // return the node name where P42C conversion happened
-func checkP4ConversionExists(p4resource *v1alpha1.P4, p4client versioned.Interface) (bool, string) {
+func checkP4ConversionExists(p4resource *v1alpha1.P4, p4client versioned.Interface, deploymentPhase string) (bool, string) {
 	flag := false
 	var node string
 
-	newP4Name := strings.Split(p4resource.Name, "-")[0]
+	p4s, _ := p4client.P4kubeV1alpha1().P4s("p4-namespace").List(context.Background(), metav1.ListOptions{})
+	for _, p4 := range p4s.Items {
+		if p4.Status.NetworkFunction == p4resource.Spec.NetworkFunction && p4.Status.DeploymentPhase == deploymentPhase {
+			node = p4.Status.Node
+			log.Printf("Found the node where build files for p4 resource '%v' are present: %v", p4resource.Name, node)
+			flag = true
+			break
+		}
+	}
+
+	return flag, node
+}
+
+// Check if C compilation for the required p4resource already executed, if yes,
+// return the node name where c compilation happened
+func checkCompilationExists(p4resource *v1alpha1.P4, p4client versioned.Interface, deploymentPhase string) (bool, string) {
+	flag := false
+	var node string
 
 	p4s, _ := p4client.P4kubeV1alpha1().P4s("p4-namespace").List(context.Background(), metav1.ListOptions{})
 	for _, p4 := range p4s.Items {
-		if strings.Contains(p4.Name, "p4") && strings.Contains(p4.Name, newP4Name) {
+		if p4.Status.NetworkFunction == p4resource.Spec.NetworkFunction && p4.Status.DeploymentPhase == deploymentPhase {
 			node = p4.Status.Node
-			log.Printf("Found the node where build files for p4 resource '%v' are present: %v", newP4Name, node)
+			log.Printf("Found the node where build files for p4 resource '%v' are present: %v", p4resource.Name, node)
 			flag = true
 			break
 		}

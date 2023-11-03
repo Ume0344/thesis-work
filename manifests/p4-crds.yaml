@@ -24,9 +24,10 @@ spec:
                   type: string
                 targetNode:
                   type: string
-                replicas:
-                  type: integer
-                  minimum: 1
+                networkFunction:
+                  type: string
+                deploymentPhase:
+                  type: string
               required: ["p4ProgramLocation", "compilerDirectory","compilerCommand"]
             status:
               type: object
@@ -34,6 +35,10 @@ spec:
                 progress:
                   type: string
                 node:
+                  type: string
+                deploymentPhase:
+                  type: string
+                networkFunction:
                   type: string
           required: ["spec"]
       subresources:
@@ -45,6 +50,12 @@ spec:
       - name: Node
         type: string
         jsonPath: .status.node
+      - name: NetworkFunction
+        type: string
+        jsonPath: .status.networkFunction
+      - name: DeploymentPhase
+        type: string
+        jsonPath: .status.deploymentPhase
       - name: Age
         type: date
         jsonPath: .metadata.creationTimestamp
