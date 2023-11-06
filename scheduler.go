@@ -76,9 +76,11 @@ func scheduleSplittedResource(k8sclient kubernetes.Clientset, p4resource *v1alph
 	cCompilation := "c-compilation"
 	switchCompilation := "switch-compilation"
 
-	// Check if compiler command has 'p4', if yes,. find a random node for it to be deployed.
-	// else if compiler command has 'c' in it, check if p4 conversion already executed. If conversion is already executed,
-	// get the node where conversion happend and schedule c compilation on that node
+	// Check if user mentioned deployment phase in manifest file. If deployment phase is p4-conversion,
+	// find a random node and deploy resource onto it. If deployment phase is c-compilation, find
+	// the node where p4-conversion is already executed. If deployment phase is switch-compilation,
+	// find the node where p4-conversion and c-compilation is already executed for that particular
+	// network function.
 	if p4resource.Spec.DeploymentPhase == p4Conversion {
 		log.Printf("Deployment Phase is P4 to C conversion, finding a random node")
 		node = findRandomNode(k8sclient)

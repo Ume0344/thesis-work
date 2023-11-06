@@ -4,7 +4,6 @@ import (
 	"context"
 	"fmt"
 	"log"
-	"strings"
 	"time"
 
 	p4clientset "p4kube/pkg/client/clientset/versioned"
@@ -159,7 +158,7 @@ func (c *Controller) handleP4Resource(p4resource *v1alpha1.P4, startTime time.Ti
 
 	} else {
 		// 'split' is a check if user wants p4 deployment in phases
-		split := c.splitCheck(p4resource.Spec.CompilerCommand)
+		split := c.splitCheck(p4resource.Spec.DeploymentPhase)
 		if split {
 			log.Println("Deployment is in 3 phases")
 			selectedNode = scheduleSplittedResource(c.k8sclient, p4resource, c.p4Client)
@@ -217,10 +216,10 @@ func (c *Controller) updateP4Status(p4resource *v1alpha1.P4, deploymentStatus st
 }
 
 // Check if user wants deployment in phases based on compiler command mentioned in manifest file
-func (c *Controller) splitCheck(compilerCommand string) bool {
+func (c *Controller) splitCheck(deploymentPhase string) bool {
 	var flag bool
 
-	if strings.Contains(compilerCommand, " p4 ") || strings.Contains(compilerCommand, " c ") || strings.Contains(compilerCommand, " run ") {
+	if deploymentPhase != "" {
 		flag = true
 	} else {
 		flag = false

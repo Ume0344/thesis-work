@@ -1,7 +1,6 @@
 package main
 
 import (
-	"context"
 	"flag"
 	"fmt"
 	"path/filepath"
@@ -9,8 +8,6 @@ import (
 
 	p4clientset "p4kube/pkg/client/clientset/versioned"
 	p4informers "p4kube/pkg/client/informers/internalversion"
-
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
@@ -29,12 +26,6 @@ func main() {
 	p4client, err := p4clientset.NewForConfig(config)
 	if err != nil {
 		fmt.Printf("Error getting p4client, %s", err.Error())
-	}
-
-	p4s, err := p4client.P4kubeV1alpha1().P4s("p4-namespace").List(context.Background(), metav1.ListOptions{})
-
-	for i, v := range p4s.Items {
-		fmt.Printf("%d-%s\n", i, v.Name)
 	}
 
 	p4informers := p4informers.NewSharedInformerFactory(p4client, 10*time.Minute)
