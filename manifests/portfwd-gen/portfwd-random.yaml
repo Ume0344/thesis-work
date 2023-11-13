@@ -1,0 +1,11 @@
+apiVersion: "p4kube.comnets/v1alpha1"
+kind: P4
+metadata:
+  name: port-fwd
+  namespace: p4-namespace
+spec:
+  networkFunction: "portfwd"
+  p4ProgramLocation: "./examples/portfwd-gen.p4"
+  compilerDirectory: "/home/$(whoami)/t4p4s"
+  compilerCommand: "./t4p4s.sh model=v1model"
+  

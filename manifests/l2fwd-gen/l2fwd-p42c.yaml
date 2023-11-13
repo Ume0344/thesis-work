@@ -1,0 +1,12 @@
+apiVersion: "p4kube.comnets/v1alpha1"
+kind: P4
+metadata:
+  name: l2fwd-p4
+  namespace: p4-namespace
+spec:
+  networkFunction: "l2fwd"
+  deploymentPhase: "p4-conversion"
+  p4ProgramLocation: "./examples/l2fwd-gen.p4 "
+  compilerDirectory: "/home/$(whoami)/t4p4s"
+  compilerCommand: "./t4p4s.sh p4 model=v1model"
+  
