@@ -67,9 +67,10 @@ func getWorkerNodeList(k8sclient kubernetes.Clientset) []v1.Node {
 	return workerNodeList
 }
 
-func scheduleSplittedResource(k8sclient kubernetes.Clientset, p4resource *v1alpha1.P4, p4client versioned.Interface) v1.Node {
+func scheduleSplittedResource(k8sclient kubernetes.Clientset, p4resource *v1alpha1.P4, p4client versioned.Interface) (v1.Node, string) {
 	var node v1.Node
 	var nodeName string
+	var command string = p4resource.Spec.CompilerCommand
 	var flag bool
 
 	p4Conversion := "p4-conversion"
@@ -77,10 +78,12 @@ func scheduleSplittedResource(k8sclient kubernetes.Clientset, p4resource *v1alph
 	switchCompilation := "switch-compilation"
 
 	// Check if user mentioned deployment phase in manifest file. If deployment phase is p4-conversion,
-	// find a random node and deploy resource onto it. If deployment phase is c-compilation, find
-	// the node where p4-conversion is already executed. If deployment phase is switch-compilation,
-	// find the node where p4-conversion and c-compilation is already executed for that particular
-	// network function.
+	// find a random node and deploy all phases onto it. If deployment phase is c-compilation, find
+	// the node where p4-conversion is already executed. If scheduler cant find any node where p4-conversion is present,
+	// find random node and just deploy the c compilation. If deployment phase is switch-compilation,
+	// find the node where c-compilation is already executed for that particular
+	// network function. If scheduler cant find any node where c-compilation is present, check if p4conversion
+	// is present, if not find random node and just deploy the switch compilation.
 	if p4resource.Spec.DeploymentPhase == p4Conversion {
 		log.Printf("Deployment Phase is P4 to C conversion, finding a random node")
 		node = findRandomNode(k8sclient)
@@ -92,7 +95,9 @@ func scheduleSplittedResource(k8sclient kubernetes.Clientset, p4resource *v1alph
 			log.Printf("P4 conversion for resource %v already executed", p4resource.Name)
 			node = findTargetNode(k8sclient, nodeName)
 		} else {
-			log.Fatalf("Could not find P4 conversion for resource %v. Please first run p4 to c conversion", p4resource.Name)
+			log.Printf("P4 conversion does not exist on any node, finding a random node to deploy c compilation")
+			node = findRandomNode(k8sclient)
+			command = "./t4p4s.sh p4 c model=v1model"
 		}
 	} else if p4resource.Spec.DeploymentPhase == switchCompilation {
 		log.Printf("Deployment Phase is switch compilation, finding a node where build files are already present")
@@ -101,11 +106,19 @@ func scheduleSplittedResource(k8sclient kubernetes.Clientset, p4resource *v1alph
 			log.Printf("C compilation for resource %v already executed", p4resource.Name)
 			node = findTargetNode(k8sclient, nodeName)
 		} else {
-			log.Fatalf("Could not find C compilation for resource %v. Please first run C compilation", p4resource.Name)
+			log.Printf("C compilation does not exist on any node, checking if p4 conversion exists")
+			flag, nodeName = checkP4ConversionExists(p4resource, p4client, p4Conversion)
+			if flag {
+				log.Printf("P4 conversion for resource %v already executed", p4resource.Name)
+				node = findTargetNode(k8sclient, nodeName)
+				command = "./t4p4s.sh c run model=v1model"
+			} else {
+				node = findRandomNode(k8sclient)
+				command = "./t4p4s.sh p4 c run model=v1model"
+			}
 		}
 	}
-
-	return node
+	return node, command
 }
 
 // Check if P42C conversion for the required p4resource already executed, if yes,

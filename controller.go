@@ -150,6 +150,7 @@ func (c *Controller) processNextItem() bool {
 func (c *Controller) handleP4Resource(p4resource *v1alpha1.P4, startTime time.Time) bool {
 	var deploy bool
 	var selectedNode v1.Node
+	var updatedCompilerCommand string
 
 	if p4resource.Status.Progress == "Deployed" {
 		fmt.Printf("P4 resource %s already deployed. Removing it from the queue.\n", p4resource.Name)
@@ -161,10 +162,13 @@ func (c *Controller) handleP4Resource(p4resource *v1alpha1.P4, startTime time.Ti
 		split := c.splitCheck(p4resource.Spec.DeploymentPhase)
 		if split {
 			log.Println("Deployment is in 3 phases")
-			selectedNode = scheduleSplittedResource(c.k8sclient, p4resource, c.p4Client)
+			selectedNode, updatedCompilerCommand = scheduleSplittedResource(c.k8sclient, p4resource, c.p4Client)
+			p4resource.Spec.CompilerCommand = updatedCompilerCommand
 		} else if p4resource.Spec.TargetNode == "" {
 			log.Println("Target Node is not mentioned in p4 manifest file, scheduling it to a random available node")
 			selectedNode = findRandomNode(c.k8sclient)
+			updatedCompilerCommand = c.checkDeploymenmtPhase(p4resource, selectedNode)
+			p4resource.Spec.CompilerCommand = updatedCompilerCommand
 		} else if p4resource.Spec.TargetNode != "" {
 			log.Printf("Target Node mentioned in p4 manifest file: %s", p4resource.Spec.TargetNode)
 			selectedNode = findTargetNode(c.k8sclient, p4resource.Spec.TargetNode)
@@ -226,4 +230,32 @@ func (c *Controller) splitCheck(deploymentPhase string) bool {
 	}
 
 	return flag
+}
+
+func (c *Controller) checkDeploymenmtPhase(p4resource *v1alpha1.P4, node v1.Node) string {
+	// get the list of p4resources which are deployed on this node. check if any deployment phase
+	// of p4 resource network function is present. If yes, update the compiler command.
+	deploymentPhase := ""
+	var command string
+	p4s, _ := c.p4Client.P4kubeV1alpha1().P4s(p4resource.Namespace).List(context.Background(), metav1.ListOptions{})
+	for _, p4 := range p4s.Items {
+		if p4.Status.NetworkFunction == p4resource.Spec.NetworkFunction && p4.Status.Node == node.Name {
+			deploymentPhase = p4.Status.DeploymentPhase
+			break
+		}
+	}
+
+	if deploymentPhase == "p4-conversion" {
+		command = "./t4p4s.sh c run model=v1model"
+
+	} else if deploymentPhase == "c-compilation" {
+		command = "./t4p4s.sh run model=v1model"
+	} else if deploymentPhase == "" {
+		command = "./t4p4s.sh model=v1model"
+
+	} else if deploymentPhase == "switch-compilation" {
+		log.Printf("This network function already deployed on this node. Cannot deploy it on this node again")
+	}
+
+	return command
 }
