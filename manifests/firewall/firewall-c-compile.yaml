@@ -8,4 +8,4 @@ spec:
   deploymentPhase: "c-compilation"
   p4ProgramLocation: "./examples/firewall.p4"
   compilerDirectory: "/home/$(whoami)/t4p4s"
-  compilerCommand: "./t4p4s.sh c model=v1model"
+  compilerCommand: "./t4p4s.sh p4 c model=v1model"
