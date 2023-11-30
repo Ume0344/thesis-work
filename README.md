@@ -1,33 +1,29 @@
-**Create ClientSet, Informers, Listers through [Code Generator](https://github.com/kubernetes/code-generator.git)**
+**Improving Performance of Orchestration for Cloud-Native Applications Using Programmable Network Devices**
 
-1- Create types.go
-- This file will have the definition of P4 object and P4 Specs.
+**Abstract**
 
-2- Create register.go
-- This file will register the P4 type to kubernetes scheme.
-
-3- We also need doc.go file where we define the global tags (tags are the way to control the behavior of code-generators)
-- Tags could be: Local and Global tags
-
-4- These three files are needed to run code-generator which then generates the following resources;
-- ClientSet - To interact with custom resources.
-
-- Lister - To get the objects from informers.
-
-- Informers - To keep track of created and deleted resources in API servers.
-
-- DeepCopy Objects - To deepcopy objects, to register struct to kubernetes as k8s objects
-
-5- Get the code-generators in home/apmec/go/src/k8s.io/ by;
-
-`git clone https://github.com/kubernetes/code-generator.git`
-
-6- Set; 
-
-`execDir=/home/apmec/go/src/k8s.io/code-generator/`
-
-7- Run this command from project root directory; 
-
-`$execDir/generate-groups.sh deepcopy,client,informer,lister p4kube/pkg/client p4kube/pkg/apis p4kube:v1alpha1 -h $execDir/examples/hack/boilerplate.go.txt --output-base ..`
-
-It will generate all the files (clientset, informers, lister etc in ./pkg ).
+In  recent  years,  the  orchestration  of  cloud-native  applications  has  experienced  tremendous 
+popularity. Kubernetes, an open-source orchestration engine, orchestrates containerized 
+applications by managing deployment, scalability, and failure recovery. As Kubernetes thrives in 
+managing containerized workloads, several frameworks have emerged to extend its capabilities. 
+For instance, KubeVirt extends Kubernetes to manage not only containerized workloads but also 
+virtual machines (VMs). Similarly, Knative facilitates the orchestration of serverless workloads. 
+However, efficient communication between containerized applications within a Kubernetes cluster 
+comes with a challenge. In containerized network functions, network packets as they traverse the 
+network stack experience increased latency, moving from user-space to kernel-space before being 
+deployed onto the network interface card (NIC). This added latency can affect the responsiveness 
+and performance of applications, particularly those with strict latency requirements. Additionally, 
+containerized  network  functions  deployed  within  a  Kubernetes  cluster  are  typically  not  easily 
+programmable  at  runtime.  This  inflexibility  can  be  limiting  in  scenarios  requiring  dynamic 
+network  configuration  and  adaptation.  To  address  these  challenges,  we  introduce  P4Kube,  a 
+framework that bridges the gap between orchestrating containerized workloads in Kubernetes and 
+the dynamic programmability of network functions. P4Kube leverages P4 (Protocol-independent 
+packet processor), a domain-specific programming language designed for runtime programming 
+of network devices. This framework will enable the deployment of network functions written in 
+P4 language with the containerized applications on a multi-node Kubernetes cluster. Furthermore, 
+P4Kube  introduces  an  intelligent  scheduler  to  schedule  the  network  functions  on  multi-node 
+cluster based on node deployment conditions. It also makes use of a P4 compiler that works with 
+emerging  hardware  acceleration  technologies  like  the  Data  Plane  Development  Kit  (DPDK)  to 
+enhance packet-processing efficiency. By reducing packet-processing time and provisioning time, 
+P4Kube aims to provide network communication with minimal latency, creating a more responsive 
+and efficient environment for containerized applications within a Kubernetes cluster.
